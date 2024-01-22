@@ -1,0 +1,6 @@
+services:
+  server:
+    image: knik/wofw-server:latest
+    environment:
+      DIFFICULTY_WIDTH: 55
+      DIFFICULTY_LENGTH: 4

@@ -68,3 +68,37 @@ func TestSolver(t *testing.T) {
 		})
 	}
 }
+
+func Benchmark(b *testing.B) {
+	benchmarks := []struct {
+		name      string
+		challenge domain.Challenge
+	}{
+		{
+			name: "fast challenge",
+			challenge: domain.Challenge{
+				N:    10,
+				K:    2,
+				Seed: []byte{0x01, 0x02, 0x03, 0x04},
+			},
+		},
+		{
+			name: "challenge",
+			challenge: domain.Challenge{
+				N:    50,
+				K:    2,
+				Seed: []byte{0x01, 0x02, 0x03, 0x04},
+			},
+		},
+	}
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			b.ReportAllocs()
+			s := solver.New()
+
+			for i := 0; i < b.N; i++ {
+				_, _ = s.Solve(bm.challenge)
+			}
+		})
+	}
+}

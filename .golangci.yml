@@ -52,3 +52,10 @@ issues:
         - gocritic
         - ineffassign
         - staticcheck
+    - path: _test.go
+      linters:
+        - funlen
+        - lll
+        - dupl
+        - goerr113
+        - goconst

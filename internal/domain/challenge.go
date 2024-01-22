@@ -3,7 +3,7 @@ package domain
 type Challenge struct {
 	Algorithm string
 
-	// The width (number of bits) of the generalized birthday problem, integer divisible by (K+1)
+	// The width (number of bits) of the generalized birthday problem, integer
 	N int
 
 	// The length of the generalized birthday problem, small integer
