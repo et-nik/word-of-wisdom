@@ -249,6 +249,10 @@ func (p *Proof) Test() bool {
 
 	h := blake2b.New256()
 
+	if len(p.inputs) == 0 {
+		return false
+	}
+
 	for i := range p.inputs {
 		input[seedLength+1] = uint32(p.inputs[i])
 
