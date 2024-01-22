@@ -11,25 +11,35 @@ import (
 )
 
 type WordsOfWisdomHandler struct {
-	verifier Verifier
-	quoter   Quoter
+	verifier   Verifier
+	quoter     Quoter
+	challenges ChallengeRepository
 }
 
-func NewWordsOfWisdomHandler(verifier Verifier, quoter Quoter) *WordsOfWisdomHandler {
+func NewWordsOfWisdomHandler(verifier Verifier, quoter Quoter, repository ChallengeRepository) *WordsOfWisdomHandler {
 	return &WordsOfWisdomHandler{
-		verifier: verifier,
-		quoter:   quoter,
+		verifier:   verifier,
+		quoter:     quoter,
+		challenges: repository,
 	}
 }
 
 func (h *WordsOfWisdomHandler) Handle(ctx context.Context, msg server.Message, w io.Writer) {
 	log.Println("WordsOfWisdomHandler")
 
-	ch, sl, err := parseMessage(msg)
+	requestID, sl, err := parseMessage(msg)
 	if err != nil {
 		_, _ = w.Write([]byte("0 invalid message"))
 		return
 	}
+
+	ch, ok := h.challenges.Get(requestID)
+	if !ok {
+		_, _ = w.Write([]byte("0 get a solution first"))
+		return
+	}
+
+	h.challenges.Delete(requestID)
 
 	if ok := h.verifier.Verify(ch, sl); !ok {
 		_, _ = w.Write([]byte("0 invalid solution"))
@@ -45,14 +55,14 @@ func (h *WordsOfWisdomHandler) Handle(ctx context.Context, msg server.Message, w
 	_, _ = w.Write([]byte(quote))
 }
 
-func parseMessage(msg server.Message) (domain.Challenge, domain.Solution, error) {
-	var ch domain.Challenge
+func parseMessage(msg server.Message) (string, domain.Solution, error) {
+	var requestID string
 	var sl domain.Solution
 
-	_, err := fmt.Sscanf(msg.Payload, "%d %d %x %d %x", &ch.N, &ch.K, &ch.Seed, &sl.Nonce, &sl.Hash)
+	_, err := fmt.Sscanf(msg.Payload, "%s %d %x", &requestID, &sl.Nonce, &sl.Hash)
 	if err != nil {
-		return domain.Challenge{}, domain.Solution{}, err
+		return "", domain.Solution{}, err
 	}
 
-	return ch, sl, nil
+	return requestID, sl, nil
 }

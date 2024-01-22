@@ -68,11 +68,13 @@ You can configurate this parameters in environment variables:
 | 30 | 2 | 2 ms       |
 | 40 | 3 | 30 ms      |
 | 52 | 3 | 50 ms      |
-| 56 | 3 | 400 ms     |
-| 60 | 3 | 1.5 sec    |
+| 56 | 3 | 60 ms      |
+| 60 | 3 | 90 ms      |
+| 70 | 3 | 400 ms     |
+| 80 | 3 | 3.8 sec    |
 
 
-### Benchmark
+### Performance & Benchmarks
 
 #### Verification
 

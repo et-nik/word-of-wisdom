@@ -3,11 +3,13 @@ package handlers
 import (
 	"bytes"
 	"context"
-	"errors"
 	"testing"
+	"time"
 
 	"github.com/et-nik/word-of-wisdom/internal/challenger"
+	"github.com/et-nik/word-of-wisdom/internal/domain"
 	"github.com/et-nik/word-of-wisdom/internal/server"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,30 +27,50 @@ func TestWordsOfWisdomHandler(t *testing.T) {
 					quote: "test",
 				}
 
+				c := challenger.NewChallengeCache(10 * time.Second)
+				c.Set("rEquEstId", domain.Challenge{
+					N: 10,
+					K: 2,
+					Seed: []byte{
+						39, 17, 226, 171, 209, 215, 180, 83, 223, 148, 34, 174, 237, 73, 199, 107, 254, 76,
+						241, 92, 162, 129, 237, 58, 181, 219, 82, 238, 29, 234, 153, 141,
+					},
+				})
+
 				return NewWordsOfWisdomHandler(
 					challenger.NewVerifier(),
 					q,
+					c,
 				)
 			},
-			messagePayload: "10 2 981a2b4f987a84a913bedf8ba067d2915454680e75351f5b4295c7db0c4211bd " +
-				"2 0100000002000000050000000c000000",
-			expected: "test",
+			messagePayload: "rEquEstId 2 01000000050000000c0000000f000000",
+			expected:       "test",
 		},
 		{
 			name: "quoter error",
 			handlerFunc: func() *WordsOfWisdomHandler {
 				q := mockQuoter{
-					err: errors.New("quoter error"),
+					err: errors.New("some error"),
 				}
+
+				c := challenger.NewChallengeCache(10 * time.Second)
+				c.Set("rEquEstId", domain.Challenge{
+					N: 10,
+					K: 2,
+					Seed: []byte{
+						39, 17, 226, 171, 209, 215, 180, 83, 223, 148, 34, 174, 237, 73, 199, 107, 254, 76,
+						241, 92, 162, 129, 237, 58, 181, 219, 82, 238, 29, 234, 153, 141,
+					},
+				})
 
 				return NewWordsOfWisdomHandler(
 					challenger.NewVerifier(),
 					q,
+					c,
 				)
 			},
-			messagePayload: "10 2 981a2b4f987a84a913bedf8ba067d2915454680e75351f5b4295c7db0c4211bd " +
-				"2 0100000002000000050000000c000000",
-			expected: "I don't know what to say",
+			messagePayload: "rEquEstId 2 01000000050000000c0000000f000000",
+			expected:       "I don't know what to say",
 		},
 		{
 			name: "invalid message",
@@ -60,6 +82,7 @@ func TestWordsOfWisdomHandler(t *testing.T) {
 				return NewWordsOfWisdomHandler(
 					challenger.NewVerifier(),
 					q,
+					challenger.NewChallengeCache(10*time.Second),
 				)
 			},
 			messagePayload: "abrakadabra",
@@ -72,14 +95,40 @@ func TestWordsOfWisdomHandler(t *testing.T) {
 					quote: "test",
 				}
 
+				c := challenger.NewChallengeCache(10 * time.Second)
+				c.Set("rEquEstId", domain.Challenge{
+					N: 10,
+					K: 2,
+					Seed: []byte{
+						20, 17, 226, 171, 209, 215, 180, 83, 223, 148, 34, 174, 237, 73, 199, 107, 254, 76,
+						241, 92, 162, 129, 237, 58, 181, 219, 82, 238, 29, 234, 153, 141,
+					},
+				})
+
 				return NewWordsOfWisdomHandler(
 					challenger.NewVerifier(),
 					q,
+					c,
 				)
 			},
-			messagePayload: "10 2 981a2b4f987a84a913bedf8ba067d2915454680e75351f5b4295c7db0c4211bd " +
-				"2 01000000000000000000000000000000",
-			expected: "0 invalid solution",
+			messagePayload: "rEquEstId 2 01000000050000000c0000000f000000",
+			expected:       "0 invalid solution",
+		},
+		{
+			name: "no_saved_challenges",
+			handlerFunc: func() *WordsOfWisdomHandler {
+				q := mockQuoter{
+					quote: "test",
+				}
+
+				return NewWordsOfWisdomHandler(
+					challenger.NewVerifier(),
+					q,
+					challenger.NewChallengeCache(10*time.Second),
+				)
+			},
+			messagePayload: "rEquEstId 2 01000000050000000c0000000f000000",
+			expected:       "0 get a solution first",
 		},
 	}
 	for _, test := range tests {

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/et-nik/word-of-wisdom/internal/challenger"
 	"github.com/et-nik/word-of-wisdom/internal/config"
@@ -29,11 +30,13 @@ func main() {
 	verifier := challenger.NewVerifier()
 	quoter := quotes.New()
 
+	cache := challenger.NewChallengeCache(5 * time.Second)
+
 	s.RegisterHandler(
 		"challenge",
-		handlers.NewChallengeHandler(ch, cfg.DifficultyWidth, cfg.DifficultyLength).Handle,
+		handlers.NewChallengeHandler(ch, cache, cfg.DifficultyWidth, cfg.DifficultyLength).Handle,
 	)
-	s.RegisterHandler("words-of-wisdom", handlers.NewWordsOfWisdomHandler(verifier, quoter).Handle)
+	s.RegisterHandler("words-of-wisdom", handlers.NewWordsOfWisdomHandler(verifier, quoter, cache).Handle)
 
 	go func() {
 		err := s.Run(ctx)

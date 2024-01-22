@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	seedLength = 16
-	maxN       = 200
-	listLength = 4
-	maxNonce   = 1 << 30
+	seedLength = 4
+	maxN       = 32
+	listLength = 5
+	maxNonce   = 0xFFFFF
 
 	forkMultiplier = 3
 )
@@ -33,18 +33,18 @@ func NewProof(
 	nonce int,
 	inputs []byte,
 ) *Proof {
-	var s [16]uint32
+	var s [seedLength]uint32
 	for i, c := range BytesToUint32Array(seed, binary.LittleEndian) {
-		if i > 15 {
+		if i >= seedLength {
 			break
 		}
 
 		s[i] = c
 	}
 
-	inp := make([]Input, len(inputs))
-	for i, c := range BytesToUint32Array(inputs, binary.LittleEndian) {
-		inp[i] = Input(c)
+	inp := make([]Input, 0, len(inputs))
+	for _, c := range BytesToUint32Array(inputs, binary.LittleEndian) {
+		inp = append(inp, Input(c))
 	}
 
 	return &Proof{
@@ -95,9 +95,9 @@ type Equihash struct {
 }
 
 func New(n int, k int, seed []byte) *Equihash {
-	var s [16]uint32
+	var s [seedLength]uint32
 	for i, c := range BytesToUint32Array(seed, binary.LittleEndian) {
-		if i > 15 {
+		if i >= seedLength {
 			break
 		}
 
@@ -113,15 +113,15 @@ func New(n int, k int, seed []byte) *Equihash {
 }
 
 func (eq *Equihash) initializeMemory() {
-	tupleN := uint32(1) << (eq.n / (eq.k + 1))
-	defaultTuple := tuple{blocks: make([]uint32, eq.k)}
-	defTuples := make([]tuple, listLength)
-	for i := range defTuples {
-		defTuples[i] = defaultTuple
-	}
+	tupleN := 1 << (eq.n / (eq.k + 1))
 	eq.tupleList = make([][]tuple, tupleN)
 	for i := range eq.tupleList {
-		eq.tupleList[i] = append([]tuple(nil), defTuples...)
+		defTuples := make([]tuple, listLength)
+		for i := range defTuples {
+			defTuples[i] = tuple{blocks: make([]uint32, eq.k)}
+		}
+
+		eq.tupleList[i] = defTuples
 	}
 	eq.filledList = make([]uint32, tupleN)
 	eq.solutions = make([]Proof, 0)
@@ -158,13 +158,13 @@ func (eq *Equihash) resolveCollisions(store bool) {
 	maxNewCollisions := len(eq.tupleList) * forkMultiplier
 	newBlocks := len(eq.tupleList[0][0].blocks) - 1
 	newForks := make([]fork, maxNewCollisions)
-	tableRow := make([]tuple, listLength)
-	for i := range tableRow {
-		tableRow[i] = tuple{blocks: make([]uint32, newBlocks)}
-	}
 	collisionList := make([][]tuple, tableLength)
 	for i := range collisionList {
-		collisionList[i] = append([]tuple(nil), tableRow...)
+		tableRow := make([]tuple, listLength)
+		for i := range tableRow {
+			tableRow[i] = tuple{blocks: make([]uint32, newBlocks)}
+		}
+		collisionList[i] = tableRow
 	}
 	newFilledList := make([]uint32, tableLength)
 	newColls := uint32(0)
@@ -183,7 +183,7 @@ func (eq *Equihash) resolveCollisions(store bool) {
 					}
 				} else {
 					if newFilledList[newIndex] < listLength && newColls < uint32(maxNewCollisions) {
-						for l := uint32(0); l < uint32(newBlocks); l++ {
+						for l := 0; l < newBlocks; l++ {
 							collisionList[newIndex][newFilledList[newIndex]].blocks[l] = eq.tupleList[i][j].blocks[l+1] ^ eq.tupleList[i][m].blocks[l+1]
 						}
 						newForks[newColls] = newFork
@@ -206,7 +206,12 @@ func (eq *Equihash) resolveTreeByLevel(fork fork, level uint32) []Input {
 	}
 	v1 := eq.resolveTreeByLevel(eq.forks[level-1][fork.ref1], level-1)
 	v2 := eq.resolveTreeByLevel(eq.forks[level-1][fork.ref2], level-1)
-	return append(v1, v2...)
+
+	result := make([]Input, len(v1)+len(v2))
+	for i, el := range append(v1, v2...) {
+		result[i] = el
+	}
+	return result
 }
 
 func (eq *Equihash) resolveTree(fork fork) []Input {
@@ -262,7 +267,7 @@ func (p *Proof) Test() bool {
 
 		for j := uint32(0); j < (p.k + 1); j++ {
 			//select j-th block of n/(k+1) bits
-			blocks[j] ^= buf[0] >> (32 - p.n/(p.k+1))
+			blocks[j] ^= buf[j] >> (32 - p.n/(p.k+1))
 		}
 	}
 

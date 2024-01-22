@@ -6,8 +6,8 @@ type Config struct {
 	ListenAddr string `env:"SERVER_ADDR" envDefault:""`
 	ListenPort int    `env:"SERVER_PORT" envDefault:"9100"`
 
-	DifficultyWidth  int `env:"DIFFICULTY_WIDTH" envDefault:"55"`
-	DifficultyLength int `env:"DIFFICULTY_LENGTH" envDefault:"2"`
+	DifficultyWidth  int `env:"DIFFICULTY_WIDTH" envDefault:"70"`
+	DifficultyLength int `env:"DIFFICULTY_LENGTH" envDefault:"3"`
 }
 
 func LoadConfig() (*Config, error) {

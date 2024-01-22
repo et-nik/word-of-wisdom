@@ -35,12 +35,12 @@ func main() {
 
 	reader := bufio.NewReader(conn)
 
-	ch, err := processChallenge(conn, reader)
+	requestID, ch, err := processChallenge(conn, reader)
 	if err != nil {
 		log.Fatalf("failed to process challenge: %v", err)
 	}
 
-	quote, err := processWordOfWisdom(ch, conn, reader)
+	quote, err := processWordOfWisdom(requestID, ch, conn, reader)
 	if err != nil {
 		log.Fatalf("failed to process word of wisdom: %v", err)
 	}
@@ -53,26 +53,26 @@ func main() {
 	fmt.Println("-----------------------------")     //nolint:forbidigo
 }
 
-func processChallenge(w io.Writer, r *bufio.Reader) (domain.Challenge, error) {
+func processChallenge(w io.Writer, r *bufio.Reader) (string, domain.Challenge, error) {
 	_, err := w.Write([]byte("challenge\n"))
 	if err != nil {
-		return domain.Challenge{}, errors.Wrap(err, "failed to write to server")
+		return "", domain.Challenge{}, errors.Wrap(err, "failed to write to server")
 	}
 
 	b, err := r.ReadBytes('\n')
 	if err != nil {
-		return domain.Challenge{}, errors.Wrap(err, "failed to read from server")
+		return "", domain.Challenge{}, errors.Wrap(err, "failed to read from server")
 	}
 
-	ch, err := parseChallenge(b)
+	requestID, ch, err := parseChallenge(b)
 	if err != nil {
-		return domain.Challenge{}, errors.Wrap(err, "failed to parse challenge")
+		return "", domain.Challenge{}, errors.Wrap(err, "failed to parse challenge")
 	}
 
-	return ch, nil
+	return requestID, ch, nil
 }
 
-func processWordOfWisdom(ch domain.Challenge, w io.Writer, r *bufio.Reader) (string, error) {
+func processWordOfWisdom(requestID string, ch domain.Challenge, w io.Writer, r *bufio.Reader) (string, error) {
 	s := solver.New()
 	sol, err := s.Solve(ch)
 	if err != nil {
@@ -81,7 +81,7 @@ func processWordOfWisdom(ch domain.Challenge, w io.Writer, r *bufio.Reader) (str
 
 	_, err = w.Write(
 		[]byte(fmt.Sprintf(
-			"words-of-wisdom %d %d %x %d %x\n", ch.N, ch.K, ch.Seed, sol.Nonce, sol.Hash,
+			"words-of-wisdom %s %d %x\n", requestID, sol.Nonce, sol.Hash,
 		)),
 	)
 	if err != nil {
@@ -104,21 +104,23 @@ func processWordOfWisdom(ch domain.Challenge, w io.Writer, r *bufio.Reader) (str
 	return string(b), nil
 }
 
-func parseChallenge(b []byte) (domain.Challenge, error) {
+func parseChallenge(b []byte) (string, domain.Challenge, error) {
 	var n, k int
 	var seedStr string
 
-	_, err := fmt.Sscanf(string(b), "%d %d %s", &n, &k, &seedStr)
+	var requestID string
+
+	_, err := fmt.Sscanf(string(b), "%s %d %d %s", &requestID, &n, &k, &seedStr)
 	if err != nil {
-		return domain.Challenge{}, errors.Wrap(err, "failed to parse challenge")
+		return "", domain.Challenge{}, errors.Wrap(err, "failed to parse challenge")
 	}
 
 	seed, err := hex.DecodeString(seedStr)
 	if err != nil {
-		return domain.Challenge{}, errors.Wrap(err, "failed to decode seed")
+		return "", domain.Challenge{}, errors.Wrap(err, "failed to decode seed")
 	}
 
-	return domain.Challenge{
+	return requestID, domain.Challenge{
 		N:    n,
 		K:    k,
 		Seed: seed,
