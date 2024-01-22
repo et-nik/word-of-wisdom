@@ -1,6 +1,6 @@
 # Word of Wisdom
 
-[![Coverage Status](https://coveralls.io/repos/github/et-nik/word-of-wisdom/badge.svg)](https://coveralls.io/github/et-nik/word-of-wisdom)
+[![Coverage Status](https://coveralls.io/repos/github/et-nik/word-of-wisdom/badge.svg?branch=main)](https://coveralls.io/github/et-nik/word-of-wisdom?branch=main)
 
 Protected TCP Server from DOS attacks with the Proof of Work (https://en.wikipedia.org/wiki/Proof_of_work), the challenge-response protocol is used.
 
