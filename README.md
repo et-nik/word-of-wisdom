@@ -85,18 +85,21 @@ goos: darwin
 goarch: arm64
 pkg: github.com/et-nik/word-of-wisdom/internal/challenger
 BenchmarkVerifier_Verify
-BenchmarkVerifier_Verify-10    	12116961	        99.12 ns/op	     160 B/op	       4 allocs/op
+BenchmarkVerifier_Verify-10    	12917673	        92.06 ns/op	     112 B/op	       4 allocs/op
 ```
 
 #### Solver
 
 ```
+
 goos: darwin
 goarch: arm64
 pkg: github.com/et-nik/word-of-wisdom/internal/solver
 Benchmark
-Benchmark/fast_challenge
-Benchmark/fast_challenge-10         	  160873	      7424 ns/op	    8736 B/op	     119 allocs/op
-Benchmark/challenge
-Benchmark/challenge-10              	      18	  67002340 ns/op	52693319 B/op	  589869 allocs/op
+Benchmark/fast_challenge_10_2
+Benchmark/fast_challenge_10_2-10         	  119826	      8824 ns/op	    7672 B/op	     187 allocs/op
+Benchmark/challenge_50_2
+Benchmark/challenge_50_2-10              	      13	  84333872 ns/op	55575446 B/op	 1245211 allocs/op
+Benchmark/challenge_70_3
+Benchmark/challenge_70_3-10              	       5	 206689875 ns/op	149424361 B/op	 3276875 allocs/op
 ```
